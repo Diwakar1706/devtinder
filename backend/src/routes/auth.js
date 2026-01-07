@@ -43,13 +43,16 @@ authRouter.post("/signup", async (req, res) => {
       expiresIn: "7d",
     });
 
-    // Send cookie + response
-    res.cookie("jwt", token, {
-      expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    // Send cookie + response (auto-login after signup)
+    const cookieOptions = {
+      expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
       httpOnly: true,
-      secure: process.env.COOKIE_SECURE === "true",
-      sameSite: process.env.COOKIE_SAME_SITE || "lax"
-    });
+      secure: process.env.COOKIE_SECURE === "true", // Must be true for HTTPS
+      sameSite: process.env.COOKIE_SAME_SITE === "none" ? "none" : (process.env.COOKIE_SAME_SITE || "lax"),
+      path: "/" // Ensure cookie is available for all paths
+    };
+    
+    res.cookie("jwt", token, cookieOptions);
 
     res.status(201).send({ message: "User created successfully", user });
   } catch (error) {
@@ -92,12 +95,21 @@ authRouter.post("/login", async (req, res) => {
     });
 
     // Send cookie + response
-    res.cookie("jwt", token, {
-      expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // ✅ fixed
+    // For cross-origin cookies (Vercel → Render), we need:
+    // - secure: true (HTTPS required)
+    // - sameSite: 'none' (allows cross-origin)
+    const cookieOptions = {
+      expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
       httpOnly: true,
-      secure: process.env.COOKIE_SECURE === "true", // set true only in HTTPS
-      sameSite: process.env.COOKIE_SAME_SITE || "lax" // Required for cookies to work in modern browsers
-    });
+      secure: process.env.COOKIE_SECURE === "true", // Must be true for HTTPS
+      sameSite: process.env.COOKIE_SAME_SITE === "none" ? "none" : (process.env.COOKIE_SAME_SITE || "lax"),
+      path: "/" // Ensure cookie is available for all paths
+    };
+    
+    // Don't set domain - let browser handle it automatically for cross-origin
+    // Setting domain explicitly can break cross-origin cookies
+    
+    res.cookie("jwt", token, cookieOptions);
 
     res.status(200).send(user);
 
@@ -109,12 +121,16 @@ authRouter.post("/login", async (req, res) => {
 
 authRouter.post("/logout",userAuth, (req, res) => {
   try {
-    res.cookie("jwt", "", {   // Clear cookie
-        expires: new Date(Date.now()),
-        httpOnly: true,
-        secure: process.env.COOKIE_SECURE === "true",
-        sameSite: process.env.COOKIE_SAME_SITE || "lax"
-    });
+    // Clear cookie with same options as setting it
+    const cookieOptions = {
+      expires: new Date(Date.now()),
+      httpOnly: true,
+      secure: process.env.COOKIE_SECURE === "true",
+      sameSite: process.env.COOKIE_SAME_SITE === "none" ? "none" : (process.env.COOKIE_SAME_SITE || "lax"),
+      path: "/"
+    };
+    
+    res.cookie("jwt", "", cookieOptions);
     res.status(200).send({ message: "Logged out successfully" });
   } catch (err) {
     res.status(400).send({ error: err.message });
