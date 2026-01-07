@@ -64,7 +64,12 @@ authRouter.post("/login", async (req, res) => {
     }
 
     // Generate JWT
-    const token = jwt.sign({ _id: user._id }, "DEV@Tinder$790", {
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      throw new Error("JWT_SECRET is not configured");
+    }
+    
+    const token = jwt.sign({ _id: user._id }, jwtSecret, {
       expiresIn: "7d",
     });
 
@@ -72,8 +77,8 @@ authRouter.post("/login", async (req, res) => {
     res.cookie("jwt", token, {
       expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // ✅ fixed
       httpOnly: true,
-      secure: false, // set true only in HTTPS
-      sameSite: "lax" // Required for cookies to work in modern browsers
+      secure: process.env.COOKIE_SECURE === "true", // set true only in HTTPS
+      sameSite: process.env.COOKIE_SAME_SITE || "lax" // Required for cookies to work in modern browsers
     });
 
     res.status(200).send(user);

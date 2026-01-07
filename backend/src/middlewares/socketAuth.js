@@ -41,7 +41,12 @@ const socketAuth = async (socket, next) => {
     console.log("🔑 Socket auth: Token found, verifying...");
 
     // Verify token
-    const decoded = jwt.verify(token, "DEV@Tinder$790");
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      return next(new Error("JWT_SECRET is not configured"));
+    }
+    
+    const decoded = jwt.verify(token, jwtSecret);
     const user = await User.findById(decoded._id);
 
     if (!user) {

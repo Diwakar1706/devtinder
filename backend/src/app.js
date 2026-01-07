@@ -1,3 +1,6 @@
+// Load environment variables first
+require("dotenv").config();
+
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -183,8 +186,9 @@ connectDB()
   .then(() => {
     console.log("✅ Database connected successfully");
     
-    server.listen(8001, () => {
-      console.log("✅ HTTP Server is successfully listening on port 8001");
+    const PORT = process.env.PORT || 8001;
+    server.listen(PORT, () => {
+      console.log(`✅ HTTP Server is successfully listening on port ${PORT}`);
       console.log("✅ WebSocket Server is ready for connections");
     });
   })

@@ -40,7 +40,12 @@ const userAuth = async (req, res, next) => {
       return res.status(401).json({ error: "Please login" });
     }
 
-    const decoded = jwt.verify(token, "DEV@Tinder$790");
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      return res.status(500).json({ error: "JWT_SECRET is not configured" });
+    }
+    
+    const decoded = jwt.verify(token, jwtSecret);
     const user = await User.findById(decoded._id);
 
     if (!user) {
