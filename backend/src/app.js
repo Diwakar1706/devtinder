@@ -16,26 +16,32 @@ const cors = require("cors");
 const { socketAuth } = require("./middlewares/socketAuth");
 const { initializeSocket } = require("./socket/socketHandler");
 
-// CORS configuration - Allow both Vite default ports (5173 and 5174)
+// CORS configuration
 const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps, curl, Postman)
     if (!origin) return callback(null, true);
     
-    // Allow localhost on common development ports
-    const allowedOrigins = [
-      "http://localhost:5173",
-      "http://localhost:5174",
-      "http://127.0.0.1:5173",
-      "http://127.0.0.1:5174"
-    ];
+    // Get allowed origins from environment variable or use defaults for development
+    const corsOrigins = process.env.CORS_ORIGINS 
+      ? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim())
+      : [
+          "http://localhost:5173",
+          "http://localhost:5174",
+          "http://127.0.0.1:5173",
+          "http://127.0.0.1:5174"
+        ];
     
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
+    // In production, only allow specified origins
+    if (process.env.NODE_ENV === 'production') {
+      if (corsOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
     } else {
-      callback(null, true); // For development, allow all origins
-      // In production, uncomment below:
-      // callback(new Error('Not allowed by CORS'));
+      // In development, allow all origins
+      callback(null, true);
     }
   },
   credentials: true,
@@ -49,24 +55,31 @@ app.use(cookieParser());
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Initialize Socket.io
+const socketCorsOrigins = process.env.CORS_ORIGINS 
+  ? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim())
+  : [
+      "http://localhost:5173",
+      "http://localhost:5174",
+      "http://127.0.0.1:5173",
+      "http://127.0.0.1:5174"
+    ];
+
 const io = new Server(server, {
   cors: {
     origin: function (origin, callback) {
       // Allow requests with no origin
       if (!origin) return callback(null, true);
       
-      // Allow localhost on common development ports
-      const allowedOrigins = [
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "http://127.0.0.1:5173",
-        "http://127.0.0.1:5174"
-      ];
-      
-      if (allowedOrigins.indexOf(origin) !== -1) {
-        callback(null, true);
+      // In production, only allow specified origins
+      if (process.env.NODE_ENV === 'production') {
+        if (socketCorsOrigins.indexOf(origin) !== -1) {
+          callback(null, true);
+        } else {
+          callback(new Error('Not allowed by CORS'));
+        }
       } else {
-        callback(null, true); // For development, allow all origins
+        // In development, allow all origins
+        callback(null, true);
       }
     },
     credentials: true,
@@ -96,6 +109,15 @@ const userRouter = require("./routes/user");
 const messageRouter = require("./routes/message");
 const connectionManagementRouter = require("./routes/connectionManagement");
 const collegesRouter = require("./routes/colleges");
+
+// Health check endpoint for Render
+app.get("/health", (req, res) => {
+  res.status(200).json({ 
+    status: "ok", 
+    message: "Server is running",
+    timestamp: new Date().toISOString()
+  });
+});
 
 app.use("/", authRouter);
 app.use("/", profileRouter);
