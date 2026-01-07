@@ -33,6 +33,24 @@ authRouter.post("/signup", async (req, res) => {
 
     await user.save();
 
+    // Generate JWT and set cookie (auto-login after signup)
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      throw new Error("JWT_SECRET is not configured");
+    }
+    
+    const token = jwt.sign({ _id: user._id }, jwtSecret, {
+      expiresIn: "7d",
+    });
+
+    // Send cookie + response
+    res.cookie("jwt", token, {
+      expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      httpOnly: true,
+      secure: process.env.COOKIE_SECURE === "true",
+      sameSite: process.env.COOKIE_SAME_SITE || "lax"
+    });
+
     res.status(201).send({ message: "User created successfully", user });
   } catch (error) {
     console.error("Signup error:", error.message);
@@ -91,11 +109,11 @@ authRouter.post("/login", async (req, res) => {
 
 authRouter.post("/logout",userAuth, (req, res) => {
   try {
-    res.cookie("jwt", null, {   //token nulll kar diya
+    res.cookie("jwt", "", {   // Clear cookie
         expires: new Date(Date.now()),
-
         httpOnly: true,
-        secure: false // set true only in HTTPS
+        secure: process.env.COOKIE_SECURE === "true",
+        sameSite: process.env.COOKIE_SAME_SITE || "lax"
     });
     res.status(200).send({ message: "Logged out successfully" });
   } catch (err) {

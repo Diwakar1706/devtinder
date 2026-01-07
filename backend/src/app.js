@@ -208,13 +208,28 @@ connectDB()
   .then(() => {
     console.log("✅ Database connected successfully");
     
-    const PORT = process.env.PORT || 8001;
+    const PORT = process.env.PORT || 8008;
     server.listen(PORT, () => {
       console.log(`✅ HTTP Server is successfully listening on port ${PORT}`);
       console.log("✅ WebSocket Server is ready for connections");
     });
+    
+    // Handle server errors
+    server.on('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        console.error(`❌ Port ${PORT} is already in use.`);
+        console.error(`💡 Solution: Kill the process using port ${PORT} or use a different port.`);
+        console.error(`💡 Windows: netstat -ano | findstr :${PORT} then taskkill /PID <PID> /F`);
+        console.error(`💡 Or change PORT in .env file`);
+        process.exit(1);
+      } else {
+        console.error("❌ Server error:", err);
+        process.exit(1);
+      }
+    });
   })
   .catch((err) => {
     console.error("❌ Database connection failed:", err);
+    process.exit(1);
   });
 

@@ -447,7 +447,7 @@ These events are emitted/received via Socket.io for real-time updates:
 
 ```javascript
 // Client side
-const socket = io('http://localhost:8001', {
+const socket = io('http://localhost:8008', {
   withCredentials: true
 });
 
@@ -567,33 +567,33 @@ Includes `deletedFor` array for soft deletion:
 
 #### Remove Connection
 ```bash
-curl -X DELETE http://localhost:8001/connection/remove/507f1f77bcf86cd799439011 \
+curl -X DELETE http://localhost:8008/connection/remove/507f1f77bcf86cd799439011 \
   -H "Cookie: token=your_jwt_token"
 ```
 
 #### Block User
 ```bash
-curl -X POST http://localhost:8001/connection/block/507f1f77bcf86cd799439011 \
+curl -X POST http://localhost:8008/connection/block/507f1f77bcf86cd799439011 \
   -H "Cookie: token=your_jwt_token" \
   -H "Content-Type: application/json"
 ```
 
 #### Unblock User
 ```bash
-curl -X POST http://localhost:8001/connection/unblock/507f1f77bcf86cd799439011 \
+curl -X POST http://localhost:8008/connection/unblock/507f1f77bcf86cd799439011 \
   -H "Cookie: token=your_jwt_token" \
   -H "Content-Type: application/json"
 ```
 
 #### Get Blocked Users
 ```bash
-curl -X GET http://localhost:8001/connections/blocked \
+curl -X GET http://localhost:8008/connections/blocked \
   -H "Cookie: token=your_jwt_token"
 ```
 
 #### Report User
 ```bash
-curl -X POST http://localhost:8001/user/report/507f1f77bcf86cd799439011 \
+curl -X POST http://localhost:8008/user/report/507f1f77bcf86cd799439011 \
   -H "Cookie: token=your_jwt_token" \
   -H "Content-Type: application/json" \
   -d '{
@@ -604,7 +604,7 @@ curl -X POST http://localhost:8001/user/report/507f1f77bcf86cd799439011 \
 
 #### Get User Reports
 ```bash
-curl -X GET http://localhost:8001/user/reports \
+curl -X GET http://localhost:8008/user/reports \
   -H "Cookie: token=your_jwt_token"
 ```
 

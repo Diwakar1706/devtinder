@@ -40,7 +40,7 @@ const Login = () => {
       } else if (err.response?.status === 500) {
         setError("Server error. Please try again later.");
       } else if (err.request) {
-        setError("Unable to connect to server. Please check your connection and ensure the backend is running on port 8001.");
+        setError("Unable to connect to server. Please check your connection and ensure the backend is running.");
       } else {
         setError(err.message || "Login failed. Please try again.");
       }

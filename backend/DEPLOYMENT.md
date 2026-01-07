@@ -99,7 +99,7 @@ Update your frontend to use the Render backend URL:
 // In frontend/src/utils/constants.js
 export const BASE_URL = process.env.NODE_ENV === 'production' 
   ? "https://your-service-name.onrender.com"
-  : "http://localhost:8001";
+  : "http://localhost:8008";
 ```
 
 Or use environment variables in your frontend build.
