@@ -32,6 +32,8 @@ CLOUDINARY_API_KEY=123456789012345
 CLOUDINARY_API_SECRET=abcdefghijklmnopqrstuvwxyz123456
 ```
 
+**Note:** Only these three individual variables are required. Do not use CLOUDINARY_URL.
+
 ## 4. Restart Your Server
 
 After adding the environment variables, restart your backend server:

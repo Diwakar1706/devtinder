@@ -1,19 +1,12 @@
 const cloudinary = require('cloudinary').v2;
 
-// Configure Cloudinary
-// Cloudinary SDK automatically reads CLOUDINARY_URL if it exists in environment
-// Format: cloudinary://api_key:api_secret@cloud_name
-// If CLOUDINARY_URL is not set, it will use individual variables
-if (!process.env.CLOUDINARY_URL) {
-  // Use individual environment variables if CLOUDINARY_URL is not set
-  cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
-    secure: true
-  });
-}
-// If CLOUDINARY_URL exists, cloudinary.config() automatically uses it
+// Configure Cloudinary using individual environment variables
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+  secure: true
+});
 
 /**
  * Upload base64 image to Cloudinary
