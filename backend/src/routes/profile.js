@@ -1,8 +1,9 @@
 const {userAuth} =require("../middlewares/auth");
 const {validateEditProfileData}=require("../utils/validation");
-const {uploadSingle, uploadsDir} = require("../middlewares/upload");
-const path = require('path');
+const {uploadSingle} = require("../middlewares/upload");
+const {uploadBase64ToCloudinary, uploadBufferToCloudinary, deleteFromCloudinary} = require("../utils/cloudinary");
 const fs = require('fs');
+const path = require('path');
 
 const express = require('express'); 
 const profileRouter = express.Router();
@@ -42,38 +43,14 @@ profileRouter.get("/profile/completion", userAuth, async (req, res) => {
   }
 });
 
-// Helper function to save base64 image to file
-const saveBase64Image = (base64String, userId) => {
-  try {
-    // Check if it's a data URL
-    if (!base64String || !base64String.startsWith('data:image')) {
-      return null;
-    }
+// Helper function to check if URL is from Cloudinary
+const isCloudinaryUrl = (url) => {
+  return url && (url.includes('cloudinary.com') || url.startsWith('http'));
+};
 
-    // Extract base64 data and extension
-    const matches = base64String.match(/^data:image\/([a-zA-Z]+);base64,(.+)$/);
-    if (!matches) {
-      return null;
-    }
-
-    const ext = matches[1];
-    const base64Data = matches[2];
-    const buffer = Buffer.from(base64Data, 'base64');
-
-    // Generate unique filename
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const filename = `${userId}-${uniqueSuffix}.${ext}`;
-    const filepath = path.join(uploadsDir, filename);
-
-    // Save file
-    fs.writeFileSync(filepath, buffer);
-
-    // Return the URL path
-    return `/uploads/profiles/${filename}`;
-  } catch (error) {
-    console.error('Error saving base64 image:', error);
-    return null;
-  }
+// Helper function to check if URL is local file
+const isLocalFile = (url) => {
+  return url && url.startsWith('/uploads/profiles/');
 };
 
 // Profile edit route - handles both file upload and JSON data
@@ -81,39 +58,68 @@ profileRouter.patch("/profile/edit", userAuth, uploadSingle, async (req, res) =>
     try{
       const loggedInUser = req.user;
       const updates = { ...req.body };
+      const userId = loggedInUser._id.toString();
 
       // Handle file upload (if file was uploaded via multer)
       if (req.file) {
-        // If a file was uploaded, use its path
-        const photoUrl = `/uploads/profiles/${req.file.filename}`;
-        updates.photourl = photoUrl;
-        
-        // Delete old profile photo if it exists and is from uploads directory
-        if (loggedInUser.photourl && loggedInUser.photourl.startsWith('/uploads/profiles/')) {
-          const oldFilePath = path.join(__dirname, '../..', loggedInUser.photourl);
-          if (fs.existsSync(oldFilePath)) {
-            fs.unlinkSync(oldFilePath);
+        try {
+          // Upload file buffer to Cloudinary
+          const photoUrl = await uploadBufferToCloudinary(req.file.buffer, userId, req.file.mimetype);
+          
+          if (photoUrl) {
+            // Delete old profile photo from Cloudinary or local storage
+            if (loggedInUser.photourl) {
+              if (isCloudinaryUrl(loggedInUser.photourl)) {
+                await deleteFromCloudinary(loggedInUser.photourl);
+              } else if (isLocalFile(loggedInUser.photourl)) {
+                // Also clean up local file if it exists
+                const oldFilePath = path.join(__dirname, '../..', loggedInUser.photourl);
+                if (fs.existsSync(oldFilePath)) {
+                  fs.unlinkSync(oldFilePath);
+                }
+              }
+            }
+            updates.photourl = photoUrl;
+          } else {
+            // If upload failed, keep existing photo
+            delete updates.photourl;
           }
+        } catch (uploadError) {
+          console.error('Error uploading file to Cloudinary:', uploadError);
+          delete updates.photourl;
         }
       } else if (updates.photourl && updates.photourl.startsWith('data:image')) {
         // Handle base64 image (from frontend)
-        const photoUrl = saveBase64Image(updates.photourl, loggedInUser._id.toString());
-        
-        if (photoUrl) {
-          // Delete old profile photo if it exists
-          if (loggedInUser.photourl && loggedInUser.photourl.startsWith('/uploads/profiles/')) {
-            const oldFilePath = path.join(__dirname, '../..', loggedInUser.photourl);
-            if (fs.existsSync(oldFilePath)) {
-              fs.unlinkSync(oldFilePath);
+        try {
+          const photoUrl = await uploadBase64ToCloudinary(updates.photourl, userId);
+          
+          if (photoUrl) {
+            // Delete old profile photo from Cloudinary or local storage
+            if (loggedInUser.photourl) {
+              if (isCloudinaryUrl(loggedInUser.photourl)) {
+                await deleteFromCloudinary(loggedInUser.photourl);
+              } else if (isLocalFile(loggedInUser.photourl)) {
+                // Also clean up local file if it exists
+                const oldFilePath = path.join(__dirname, '../..', loggedInUser.photourl);
+                if (fs.existsSync(oldFilePath)) {
+                  fs.unlinkSync(oldFilePath);
+                }
+              }
             }
+            updates.photourl = photoUrl;
+          } else {
+            // If upload failed, keep existing photo
+            delete updates.photourl;
           }
-          updates.photourl = photoUrl;
-        } else {
-          // If base64 conversion failed, keep existing photo
+        } catch (uploadError) {
+          console.error('Error uploading base64 to Cloudinary:', uploadError);
           delete updates.photourl;
         }
-      } else if (updates.photourl && !updates.photourl.startsWith('/uploads/profiles/') && !updates.photourl.startsWith('http')) {
-        // If it's a relative path or invalid, keep existing
+      } else if (updates.photourl && isCloudinaryUrl(updates.photourl)) {
+        // If it's already a Cloudinary URL, keep it as is
+        // This handles cases where the URL is already uploaded
+      } else if (updates.photourl && !isCloudinaryUrl(updates.photourl) && !isLocalFile(updates.photourl)) {
+        // If it's not a valid URL format, remove it
         delete updates.photourl;
       }
 
