@@ -5,7 +5,6 @@ import { addUser } from '../utils/userSlice';
 import { useNavigate, Link } from 'react-router-dom';
 import { BASE_URL } from '../utils/constants';
 import { useTheme } from '../utils/ThemeContext';
-import ThemeToggle from './ThemeToggle';
 
 const Login = () => {
   const [emailId, setEmailId] = useState("");
@@ -49,11 +48,6 @@ const Login = () => {
 
   return (
     <div className={`min-h-screen flex items-center justify-center ${isDark ? 'bg-gray-900' : 'bg-gradient-to-br from-pink-500 via-purple-500 to-indigo-600'} relative overflow-hidden py-8 transition-colors duration-300`}>
-      {/* Theme Toggle */}
-      <div className="absolute top-4 right-4 z-20">
-        <ThemeToggle />
-      </div>
-
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className={`absolute -top-40 -right-40 w-80 h-80 ${isDark ? 'bg-pink-600' : 'bg-purple-300'} rounded-full mix-blend-multiply filter blur-xl opacity-50 animate-blob`}></div>

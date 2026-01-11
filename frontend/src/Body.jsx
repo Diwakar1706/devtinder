@@ -34,10 +34,12 @@ const Body = () => {
         }
       }
     } catch (err) {
+      // Only handle 401 errors - don't navigate here, let ProtectedRoute handle redirects
+      // This prevents redirect loops and ensures proper auth flow
       if (err.response && err.response.status === 401) {
-        navigate('/login');
         disconnectSocket();
       }
+      // For other errors, don't redirect - let the user stay on current page
     }
   };
 
