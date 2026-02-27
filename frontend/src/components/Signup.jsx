@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import axios from 'axios';
 import { useDispatch } from 'react-redux';
 import { addUser } from '../utils/userSlice';
+import { setAuthChecked } from '../utils/authSlice';
 import { useNavigate, Link } from 'react-router-dom';
 import { BASE_URL } from '../utils/constants';
 import { useTheme } from '../utils/ThemeContext';
@@ -20,29 +21,16 @@ const Signup = () => {
     e.preventDefault();
     try {
       setError("");
-      await axios.post(
+      const res = await axios.post(
         BASE_URL + "/signup",
-        {
-          firstName,
-          lastName,
-          emailId,
-          password,
-        },
+        { firstName, lastName, emailId, password },
         { withCredentials: true }
       );
-      
-      // After signup, automatically log in the user
-      const loginRes = await axios.post(
-        BASE_URL + "/login",
-        {
-          emailId,
-          password,
-        },
-        { withCredentials: true }
-      );
-      
-      dispatch(addUser(loginRes.data));
-      // Redirect new users to profile to complete their details
+
+      // Signup response already contains the user + sets the JWT cookie —
+      // no need for a second /login call
+      dispatch(addUser(res.data.user));
+      dispatch(setAuthChecked());
       return navigate("/profile");
     } catch (err) {
       setError(err.response?.data?.error || "Signup failed. Please try again.");

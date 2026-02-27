@@ -6,6 +6,7 @@ import axios from 'axios'
 import { BASE_URL } from './utils/constants'
 import { useDispatch, useSelector } from 'react-redux'
 import { addUser } from './utils/userSlice'
+import { setAuthChecked } from './utils/authSlice'
 import { initSocket, disconnectSocket } from './utils/socket'
 import { useTheme } from './utils/ThemeContext'
 
@@ -23,7 +24,7 @@ const Body = () => {
         withCredentials: true,
       });
       dispatch(addUser(res.data));
-      
+
       // Initialize socket after user is loaded
       if (res.data) {
         const socket = initSocket()
@@ -40,6 +41,9 @@ const Body = () => {
         disconnectSocket();
       }
       // For other errors, don't redirect - let the user stay on current page
+    } finally {
+      // Always mark auth as checked so ProtectedRoute doesn't need to guess
+      dispatch(setAuthChecked());
     }
   };
 

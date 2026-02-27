@@ -7,36 +7,16 @@ import { useTheme } from '../utils/ThemeContext';
 
 const ProtectedRoute = ({ children }) => {
   const user = useSelector((state) => state.user);
+  const authChecked = useSelector((state) => state.auth.authChecked);
   const [isProfileComplete, setIsProfileComplete] = useState(null);
   const [profileCompletion, setProfileCompletion] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [authChecked, setAuthChecked] = useState(false);
   const { isDark, bg, text } = useTheme();
-
-  // Wait for auth check to complete (give Body's fetchUser time to finish)
-  useEffect(() => {
-    // If user is already available, allow auth check immediately
-    if (user) {
-      setAuthChecked(true);
-      return;
-    }
-
-    // Otherwise, wait for Body's fetchUser to complete
-    // Use a longer timeout to accommodate slower network requests
-    const timer = setTimeout(() => {
-      setAuthChecked(true);
-    }, 1000); // Delay to allow Body's fetchUser to complete (network requests can take time)
-
-    return () => clearTimeout(timer);
-  }, [user]);
 
   useEffect(() => {
     const checkProfileCompletion = async () => {
       if (!user) {
-        // Only set loading false after auth check delay has passed
-        if (authChecked) {
-          setLoading(false);
-        }
+        setLoading(false);
         return;
       }
 
